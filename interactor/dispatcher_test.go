@@ -5,18 +5,24 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/screwyprof/golibs/assert"
+	"github.com/stretchr/testify/assert"
 
 	"github.com/screwyprof/golibs/interactor"
 )
 
 func TestDispatcher(t *testing.T) {
+	t.Parallel()
+
 	t.Run("dispatcher implements UseCaseRunner interface", func(t *testing.T) {
+		t.Parallel()
+
 		dispatcher := interactor.NewDispatcher()
 		var _ interactor.UseCaseRunner = dispatcher
 	})
 
 	t.Run("when use case not found, an error returned", func(t *testing.T) {
+		t.Parallel()
+
 		// arrange
 		dispatcher := interactor.NewDispatcher()
 
@@ -29,8 +35,10 @@ func TestDispatcher(t *testing.T) {
 	})
 
 	t.Run("when use case registered, it is being run", func(t *testing.T) {
+		t.Parallel()
+
 		// arrange
-		useCaseRunner := &GeneralInteractorSpy{}
+		useCaseRunner := &GeneralUseCaseSpy{}
 
 		dispatcher := interactor.NewDispatcher()
 		dispatcher.RegisterUseCaseRunner("TestRequest", useCaseRunner.RunUseCase)
@@ -44,7 +52,9 @@ func TestDispatcher(t *testing.T) {
 	})
 }
 
-func assertUseCaseWasRunSuccessfully(t *testing.T, err error, useCaseRunner *GeneralInteractorSpy) {
+func assertUseCaseWasRunSuccessfully(t *testing.T, err error, useCaseRunner *GeneralUseCaseSpy) {
+	t.Helper()
+
 	assert.NoError(t, err)
 	assert.True(t, useCaseRunner.wasCalled)
 }

@@ -3,10 +3,11 @@ package interactor
 import (
 	"context"
 	"errors"
+	"fmt"
 	"reflect"
 )
 
-// Guard errors
+// Guard errors.
 var (
 	ErrInvalidUseCaseRunnerSignature = errors.New("useCaseRunner must have 3 input params")
 	ErrUseCaseRunnerIsNotAFunction   = errors.New("useCaseRunner is not a function")
@@ -16,19 +17,19 @@ var (
 )
 
 // Adapt transforms a concrete use case runner into a generic one.
-// A concrete runner function should have 3 arguments:
-// - ctx context.Context,
-// - req - a request struct,
-// - res - a pointer to a response struct.
+// A concrete runner function must:
+//  1. Have 3 arguments:
+//     * ctx context.Context,
+//     * req - a request struct,
+//     * res - a pointer to a response struct
+//  2. Return an error
 //
-// The returned param must have error type.
 // An example signature may look like:
-//   func(ctx context.Context, req TestRequest, res *TestResponse) error
 //
+//	func(ctx context.Context, req TestRequest, res *TestResponse) error
 func Adapt(useCaseRunner interface{}) (UseCaseRunnerFn, error) {
 	useCaseRunnerType := reflect.TypeOf(useCaseRunner)
-	err := ensureSignatureIsValid(useCaseRunnerType)
-	if err != nil {
+	if err := ensureSignatureIsValid(useCaseRunnerType); err != nil {
 		return nil, err
 	}
 
@@ -39,9 +40,18 @@ func Adapt(useCaseRunner interface{}) (UseCaseRunnerFn, error) {
 	return fn, nil
 }
 
+func MustAdapt(useCaseRunner interface{}) UseCaseRunnerFn {
+	r, err := Adapt(useCaseRunner)
+	if err != nil {
+		panic(err)
+	}
+
+	return r
+}
+
 func ensureSignatureIsValid(useCaseRunnerType reflect.Type) error {
 	if useCaseRunnerType.Kind() != reflect.Func {
-		return ErrUseCaseRunnerIsNotAFunction
+		return fmt.Errorf("%w: %s", ErrUseCaseRunnerIsNotAFunction, useCaseRunnerType.String())
 	}
 
 	if useCaseRunnerType.NumIn() != 3 {
@@ -70,6 +80,7 @@ func ensureParamsHaveValidTypes(useCaseRunnerType reflect.Type) error {
 func firstArgIsContext(useCaseRunnerType reflect.Type) bool {
 	ctxtInterface := reflect.TypeOf((*context.Context)(nil)).Elem()
 	ctx := useCaseRunnerType.In(0)
+
 	return ctx.Implements(ctxtInterface)
 }
 
@@ -79,24 +90,27 @@ func secondArgIsStructure(useCaseRunnerType reflect.Type) bool {
 
 func thirdArgIsAPointerToAStruct(useCaseRunnerType reflect.Type) bool {
 	thirdArg := useCaseRunnerType.In(2)
-	return thirdArg.Kind() == reflect.Ptr && thirdArg.Elem().Kind() == reflect.Struct
 
+	return thirdArg.Kind() == reflect.Ptr && thirdArg.Elem().Kind() == reflect.Struct
 }
 
 func invokeUseCaseRunner(useCaseRunner interface{}, args ...interface{}) error {
 	result := invoke(useCaseRunner, args...)
-	resErr := result[0].Interface()
-	if resErr != nil {
-		return resErr.(error)
+
+	if err, ok := result[0].Interface().(error); ok && err != nil {
+		return err
 	}
+
 	return nil
 }
 
 func invoke(fn interface{}, args ...interface{}) []reflect.Value {
 	v := reflect.ValueOf(fn)
+
 	in := make([]reflect.Value, len(args))
 	for i, arg := range args {
 		in[i] = reflect.ValueOf(arg)
 	}
+
 	return v.Call(in)
 }

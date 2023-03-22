@@ -6,8 +6,7 @@ import (
 	"testing"
 
 	"github.com/brianvoe/gofakeit/v4"
-
-	"github.com/screwyprof/golibs/assert"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestInteractor(t *testing.T) {
@@ -16,26 +15,26 @@ func TestInteractor(t *testing.T) {
 		ID := gofakeit.Number(1, 100)
 		want := TestResponse{result: ID}
 
-		concreateInteractor := ConcreteInteractorStub{res: ID}
+		sut := ConcreteUseCase{res: ID}
 
 		// act
 		var res TestResponse
-		err := concreateInteractor.RunUseCase(context.Background(), TestRequest{id: ID}, &res)
+		err := sut.RunUseCase(context.Background(), TestRequest{id: ID}, &res)
 
 		// assert
 		assert.NoError(t, err)
-		assert.Equals(t, want, res)
+		assert.Equal(t, want, res)
 	})
 
 	t.Run("Invalid request provided, an error returned", func(t *testing.T) {
 		// arrange
-		concreateInteractor := ConcreteInteractorStub{err: errors.New("an error")}
+		sut := ConcreteUseCase{err: errors.New("an error")}
 
 		// act
 		var res TestResponse
-		err := concreateInteractor.RunUseCase(context.Background(), TestRequest{}, &res)
+		err := sut.RunUseCase(context.Background(), TestRequest{}, &res)
 
 		// assert
-		assert.NotNil(t, err)
+		assert.Error(t, err)
 	})
 }

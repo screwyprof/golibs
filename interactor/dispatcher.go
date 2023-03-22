@@ -28,15 +28,16 @@ func NewDispatcher() *Dispatcher {
 // Implements UseCaseRunner interface.
 func (d *Dispatcher) RunUseCase(ctx context.Context, req interface{}, res interface{}) error {
 	reqType := reflect.TypeOf(req).Name()
+
 	runner, ok := d.runners[reqType]
 	if !ok {
-		return fmt.Errorf("interactor for %s request is not found: %w", reqType, ErrNotFound)
+		return fmt.Errorf("%w: request type: %s", ErrNotFound, reqType)
 	}
+
 	return runner(ctx, req, res)
 }
 
 // RegisterUseCaseRunner registers a use case runner.
-// TODO: add guards for an empty runner name and a nil runner.
 func (d *Dispatcher) RegisterUseCaseRunner(useCaseRunnerFnName string, useCaseRunnerFn UseCaseRunnerFn) {
 	d.runnersMu.Lock()
 	defer d.runnersMu.Unlock()

@@ -6,12 +6,17 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/screwyprof/golibs/assert"
+	"github.com/stretchr/testify/assert"
+
 	"github.com/screwyprof/golibs/interactor"
 )
 
-func TestAdaptor(t *testing.T) {
+func TestAdapt(t *testing.T) {
+	t.Parallel()
+
 	t.Run("given use case runner must be a function", func(t *testing.T) {
+		t.Parallel()
+
 		// act
 		_, err := interactor.Adapt(struct{}{})
 
@@ -20,10 +25,13 @@ func TestAdaptor(t *testing.T) {
 	})
 
 	t.Run("given use case runner must have 3 arguments", func(t *testing.T) {
+		t.Parallel()
+
 		// arrange
 		invalidRunner := func(ctx context.Context, req TestRequest) error {
 			return nil
 		}
+
 		// act
 		_, err := interactor.Adapt(invalidRunner)
 
@@ -32,10 +40,13 @@ func TestAdaptor(t *testing.T) {
 	})
 
 	t.Run("first input param must be context.Context", func(t *testing.T) {
+		t.Parallel()
+
 		// arrange
 		invalidRunner := func(ctx struct{}, req TestRequest, resp *TestResponse) error {
 			return nil
 		}
+
 		// act
 		_, err := interactor.Adapt(invalidRunner)
 
@@ -44,10 +55,13 @@ func TestAdaptor(t *testing.T) {
 	})
 
 	t.Run("second input param must be a structure", func(t *testing.T) {
+		t.Parallel()
+
 		// arrange
 		invalidRunner := func(ctx context.Context, req interface{}, resp *TestResponse) error {
 			return nil
 		}
+
 		// act
 		_, err := interactor.Adapt(invalidRunner)
 
@@ -56,10 +70,13 @@ func TestAdaptor(t *testing.T) {
 	})
 
 	t.Run("third input param must be a pointer to a structure", func(t *testing.T) {
+		t.Parallel()
+
 		// arrange
 		invalidRunner := func(ctx context.Context, req TestRequest, resp TestResponse) error {
 			return nil
 		}
+
 		// act
 		_, err := interactor.Adapt(invalidRunner)
 
@@ -68,8 +85,10 @@ func TestAdaptor(t *testing.T) {
 	})
 
 	t.Run("valid concrete use case runner given, valid generic use case runner returned", func(t *testing.T) {
+		t.Parallel()
+
 		// act
-		got, err := interactor.Adapt(ConcreteInteractorStub{}.RunUseCase)
+		got, err := interactor.Adapt(ConcreteUseCase{}.RunUseCase)
 
 		// assert
 		assert.NoError(t, err)
@@ -77,33 +96,59 @@ func TestAdaptor(t *testing.T) {
 	})
 
 	t.Run("ensure that the given valid concrete use case runner can return valid result", func(t *testing.T) {
+		t.Parallel()
+
 		// arrange
 		want := TestResponse{result: 123}
 
 		// act
-		runner, err := interactor.Adapt(ConcreteInteractorStub{res: 123}.RunUseCase)
+		runner, err := interactor.Adapt(ConcreteUseCase{res: 123}.RunUseCase)
 		assert.NoError(t, err)
 
 		var res TestResponse
-		err = runner(context.Background(), TestRequest{}, &res)
+		err = runner(context.Background(), TestRequest{id: 123}, &res)
 
 		// assert
 		assert.NoError(t, err)
-		assert.Equals(t, want, res)
+		assert.Equal(t, want, res)
 	})
 
 	t.Run("ensure that the given valid concrete use case runner can return error result", func(t *testing.T) {
+		t.Parallel()
+
 		// arrange
-		want := errors.New("some error")
+		want := errSomeErr
 
 		// act
-		runner, err := interactor.Adapt(ConcreteInteractorStub{err: want}.RunUseCase)
+		runner, err := interactor.Adapt(ConcreteUseCase{err: want}.RunUseCase)
 		assert.NoError(t, err)
 
 		err = runner(context.Background(), TestRequest{}, &TestResponse{})
 
 		// assert
-		assert.Equals(t, want, err)
+		assert.ErrorIs(t, err, want)
+	})
+}
+
+func TestMustAdapt(t *testing.T) {
+	t.Parallel()
+
+	t.Run("it panics if it cannot adapt a use case runner", func(t *testing.T) {
+		t.Parallel()
+
+		assert.Panics(t, func() {
+			interactor.MustAdapt(struct{}{})
+		})
+	})
+
+	t.Run("it adapts a use case runner", func(t *testing.T) {
+		t.Parallel()
+
+		// act
+		runner := interactor.MustAdapt(ConcreteUseCase{res: 123}.RunUseCase)
+
+		// assert
+		assert.NotNil(t, runner)
 	})
 }
 
