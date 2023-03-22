@@ -21,8 +21,8 @@ var (
 //
 // The returned param must have error type.
 // An example signature may look like:
-//   func(ctx context.Context, c TestCommand) error
 //
+//	func(ctx context.Context, c TestCommand) error
 func Adapt(commandHandler interface{}) (CommandHandlerFn, error) {
 	commandHandlerType := reflect.TypeOf(commandHandler)
 	err := ensureSignatureIsValid(commandHandlerType)

@@ -27,6 +27,7 @@ type DispatcherTester func(given GivenFn, when WhenFn, then ThenFn)
 // Test runs the test.
 //
 // Example:
+//
 //	commandHandler := &mock.ConcreteCommandHandlerStub{}
 //
 //	Test(t)(
@@ -34,7 +35,6 @@ type DispatcherTester func(given GivenFn, when WhenFn, then ThenFn)
 //		When(context.Background(), mock.TestCommand{}),
 //		ThenOk(),
 //	)
-//
 func Test(t testing.TB) DispatcherTester {
 	return func(given GivenFn, when WhenFn, then ThenFn) {
 		t.Helper()

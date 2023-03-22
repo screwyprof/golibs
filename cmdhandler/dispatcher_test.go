@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/screwyprof/golibs/assert"
-
 	"github.com/screwyprof/golibs/cmdhandler"
 	"github.com/screwyprof/golibs/cmdhandler/mock"
 )

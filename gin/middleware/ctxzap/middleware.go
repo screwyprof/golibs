@@ -14,8 +14,8 @@ import (
 // Requests without errors are logged using zap.Info().
 //
 // It receives:
-//   1. A time package format string (e.g. time.RFC3339).
-//   2. A boolean stating whether to use UTC time zone or local.
+//  1. A time package format string (e.g. time.RFC3339).
+//  2. A boolean stating whether to use UTC time zone or local.
 func CtxZap(logger *zap.Logger, timeFormat string, utc bool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		newCtx := ToContext(c, logger)

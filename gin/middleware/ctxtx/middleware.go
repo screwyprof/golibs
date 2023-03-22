@@ -12,7 +12,6 @@ func CtxTX(db *pg.DB) gin.HandlerFunc {
 			c.Next()
 			return nil
 		})
-
 		if err != nil {
 			_ = c.AbortWithError(c.Writer.Status(), err)
 		}

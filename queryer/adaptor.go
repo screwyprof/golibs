@@ -23,8 +23,8 @@ var (
 //
 // The returned param must have error type.
 // An example signature may look like:
-//   func(ctx context.Context, q TestQuery, r *TestReport) error
 //
+//	func(ctx context.Context, q TestQuery, r *TestReport) error
 func Adapt(queryRunner interface{}) (QueryRunnerFn, error) {
 	queryRunnerType := reflect.TypeOf(queryRunner)
 	err := ensureSignatureIsValid(queryRunnerType)
@@ -89,7 +89,6 @@ func secondArgIsStructure(queryRunnerType reflect.Type) bool {
 func thirdArgIsAPointerToAStruct(queryRunnerType reflect.Type) bool {
 	thirdArg := queryRunnerType.In(2)
 	return thirdArg.Kind() == reflect.Ptr && thirdArg.Elem().Kind() == reflect.Struct
-
 }
 
 func invokeQueryRunner(queryRunner interface{}, args ...interface{}) error {

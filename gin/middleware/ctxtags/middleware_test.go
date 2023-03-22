@@ -40,6 +40,6 @@ func whenRequestIsHandledByMiddleware(r *gin.Engine) *apitest.Request {
 func thenTagsAreSet(t *testing.T, r *apitest.Request) {
 	res := r.Expect(t)
 	res.Status(http.StatusOK).
-		//Body(requestID).
+		// Body(requestID).
 		End()
 }

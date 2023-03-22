@@ -27,6 +27,7 @@ type QueryerTester func(given GivenFn, when WhenFn, then ThenFn)
 // Test runs the test.
 //
 // Example:
+//
 //	want := &mock.TestReport{Value: 123}
 //	queryRunner := &mock.ConcreteQueryerStub{Rep: 123}
 //
@@ -35,7 +36,6 @@ type QueryerTester func(given GivenFn, when WhenFn, then ThenFn)
 //		When(context.Background(), mock.TestQuery{}, &mock.TestReport{}),
 //		Then(want),
 //	)
-//
 func Test(t testing.TB) QueryerTester {
 	return func(given GivenFn, when WhenFn, then ThenFn) {
 		t.Helper()
