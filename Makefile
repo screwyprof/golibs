@@ -18,6 +18,8 @@ deps: ## sync go mod deps
 	@echo -e "$(OK_COLOR)--> Downloading go.mod dependencies$(NO_COLOR)"
 	go mod tidy
 	go mod download
+	go install mvdan.cc/gofumpt@v0.3.1
+	go install github.com/daixiang0/gci@v0.8.0
 
 fmt: ## format go files
 	@echo -e "$(OK_COLOR)--> Formatting go files$(NO_COLOR)"
