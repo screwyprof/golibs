@@ -14,6 +14,7 @@ var (
 	ErrFirstArgHasInvalidType        = errors.New("first input argument must have context.Context type")
 	ErrSecondArgHasInvalidType       = errors.New("second input argument must be a struct")
 	ErrThirdArgHasInvalidType        = errors.New("third input argument must be a pointer to a struct")
+	ErrResultTypeMismatch            = errors.New("result type mismatch")
 )
 
 // Adapt transforms a concrete use case runner into a generic one.
@@ -33,7 +34,11 @@ func Adapt(useCaseRunner interface{}) (UseCaseRunnerFn, error) {
 		return nil, err
 	}
 
-	fn := func(ctx context.Context, req interface{}, res interface{}) error {
+	fn := func(ctx context.Context, req Request, res interface{}) error {
+		if err := ensureResultHasValidType(useCaseRunnerType, res); err != nil {
+			return err
+		}
+
 		return invokeUseCaseRunner(useCaseRunner, ctx, req, res)
 	}
 
@@ -59,6 +64,17 @@ func ensureSignatureIsValid(useCaseRunnerType reflect.Type) error {
 	}
 
 	return ensureParamsHaveValidTypes(useCaseRunnerType)
+}
+
+func ensureResultHasValidType(runnerType reflect.Type, res interface{}) error {
+	want := runnerType.In(2).Elem()
+	got := reflect.TypeOf(res).Elem()
+
+	if got != want {
+		return fmt.Errorf("%w: want %v, got %v", ErrResultTypeMismatch, want, got)
+	}
+
+	return nil
 }
 
 func ensureParamsHaveValidTypes(useCaseRunnerType reflect.Type) error {

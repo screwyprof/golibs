@@ -3,12 +3,18 @@ package interactor_test
 import (
 	"context"
 	"errors"
+
+	"github.com/screwyprof/golibs/interactor"
 )
 
 var errSomeErr = errors.New("some error")
 
 type TestRequest struct {
 	id int
+}
+
+func (r TestRequest) Type() string {
+	return "TestRequest"
 }
 
 type TestResponse struct {
@@ -30,7 +36,7 @@ type GeneralUseCaseSpy struct {
 	wasCalled bool
 }
 
-func (s *GeneralUseCaseSpy) RunUseCase(ctx context.Context, req interface{}, res interface{}) error {
+func (s *GeneralUseCaseSpy) RunUseCase(ctx context.Context, req interactor.Request, res interface{}) error {
 	s.wasCalled = true
 
 	return nil

@@ -4,8 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"reflect"
-	"sync"
 )
 
 // ErrNotFound indicates that the use case runner was not registered for the given request.
@@ -13,8 +11,7 @@ var ErrNotFound = errors.New("use case runner not found")
 
 // Dispatcher dispatches the given request to a pre-registered use case runner.
 type Dispatcher struct {
-	runners   map[string]UseCaseRunnerFn
-	runnersMu sync.RWMutex
+	runners map[string]UseCaseRunnerFn
 }
 
 // NewDispatcher creates a new instance of Dispatcher.
@@ -26,8 +23,8 @@ func NewDispatcher() *Dispatcher {
 
 // RunUseCase runs a use-case and returns the corresponding result setting res value by ref.
 // Implements UseCaseRunner interface.
-func (d *Dispatcher) RunUseCase(ctx context.Context, req interface{}, res interface{}) error {
-	reqType := reflect.TypeOf(req).Name()
+func (d *Dispatcher) RunUseCase(ctx context.Context, req Request, res interface{}) error {
+	reqType := req.Type()
 
 	runner, ok := d.runners[reqType]
 	if !ok {
@@ -39,8 +36,5 @@ func (d *Dispatcher) RunUseCase(ctx context.Context, req interface{}, res interf
 
 // RegisterUseCaseRunner registers a use case runner.
 func (d *Dispatcher) RegisterUseCaseRunner(useCaseRunnerFnName string, useCaseRunnerFn UseCaseRunnerFn) {
-	d.runnersMu.Lock()
-	defer d.runnersMu.Unlock()
-
 	d.runners[useCaseRunnerFnName] = useCaseRunnerFn
 }

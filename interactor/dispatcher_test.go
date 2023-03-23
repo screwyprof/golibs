@@ -52,6 +52,23 @@ func TestDispatcher(t *testing.T) {
 	})
 }
 
+func BenchmarkDispatcher(b *testing.B) {
+	dispatcher := interactor.NewDispatcher()
+	useCaseRunner := &GeneralUseCaseSpy{}
+	dispatcher.RegisterUseCaseRunner("TestRequest", useCaseRunner.RunUseCase)
+
+	var res TestResponse
+
+	req := TestRequest{id: 123}
+	ctx := context.Background()
+
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		_ = dispatcher.RunUseCase(ctx, req, &res)
+	}
+}
+
 func assertUseCaseWasRunSuccessfully(t *testing.T, err error, useCaseRunner *GeneralUseCaseSpy) {
 	t.Helper()
 

@@ -84,6 +84,22 @@ func TestAdapt(t *testing.T) {
 		assertThirdArgHasPointerToAStructType(t, err)
 	})
 
+	t.Run("provided response type must match expected response type", func(t *testing.T) {
+		t.Parallel()
+
+		// arrange
+		type AnotherResponse struct{}
+
+		runner, err := interactor.Adapt(ConcreteUseCase{}.RunUseCase)
+		assert.NoError(t, err)
+
+		// act
+		err = runner(context.Background(), TestRequest{}, &AnotherResponse{})
+
+		// assert
+		assert.ErrorIs(t, err, interactor.ErrResultTypeMismatch)
+	})
+
 	t.Run("valid concrete use case runner given, valid generic use case runner returned", func(t *testing.T) {
 		t.Parallel()
 
