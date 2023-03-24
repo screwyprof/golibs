@@ -4,37 +4,40 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"reflect"
 )
 
-// ErrNotFound indicates that the use case runner was not registered for the given request.
-var ErrNotFound = errors.New("use case runner not found")
+// ErrUseCaseRunnerNotFound is returned when the use case runner is not registered for the given Request type.
+var ErrUseCaseRunnerNotFound = errors.New("use case runner not registered for the given request type")
 
-// Dispatcher dispatches the given request to a pre-registered use case runner.
+// Dispatcher manages registered UseCaseRunners and dispatches requests to the appropriate UseCaseRunner.
 type Dispatcher struct {
-	runners map[string]UseCaseRunnerFn
+	useCaseRunners map[reflect.Type]UseCaseRunnerFn
 }
 
-// NewDispatcher creates a new instance of Dispatcher.
+// NewDispatcher creates a new Dispatcher instance.
 func NewDispatcher() *Dispatcher {
 	return &Dispatcher{
-		runners: make(map[string]UseCaseRunnerFn),
+		useCaseRunners: make(map[reflect.Type]UseCaseRunnerFn),
 	}
 }
 
-// RunUseCase runs a use-case and returns the corresponding result setting res value by ref.
-// Implements UseCaseRunner interface.
-func (d *Dispatcher) RunUseCase(ctx context.Context, req Request, res interface{}) error {
-	reqType := req.Type()
+// Register registers the given UseCaseRunner for the provided request type.
+func (d *Dispatcher) Register(request Request, runner UseCaseRunnerFn) {
+	requestType := reflect.TypeOf(request)
+	d.useCaseRunners[requestType] = runner
+}
 
-	runner, ok := d.runners[reqType]
+// Run runs a use case with the given Request and writes the result to the provided Response.
+//
+// It returns nil if the use case was executed successfully.
+// It returns ErrUseCaseRunnerNotFound  if the use case runner is not registered for the Request type.
+func (d *Dispatcher) Run(ctx context.Context, req Request, resp Response) error {
+	reqType := reflect.TypeOf(req)
+	runner, ok := d.useCaseRunners[reqType]
 	if !ok {
-		return fmt.Errorf("%w: request type: %s", ErrNotFound, reqType)
+		return fmt.Errorf("%w: %s", ErrUseCaseRunnerNotFound, reqType)
 	}
 
-	return runner(ctx, req, res)
-}
-
-// RegisterUseCaseRunner registers a use case runner.
-func (d *Dispatcher) RegisterUseCaseRunner(useCaseRunnerFnName string, useCaseRunnerFn UseCaseRunnerFn) {
-	d.runners[useCaseRunnerFnName] = useCaseRunnerFn
+	return runner(ctx, req, resp)
 }

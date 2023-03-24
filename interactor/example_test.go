@@ -13,11 +13,11 @@ func ExampleDispatcher() {
 	useCaseRunner := &ConcreteUseCase{res: 42}
 
 	dispatcher := interactor.NewDispatcher()
-	dispatcher.RegisterUseCaseRunner("TestRequest", interactor.MustAdapt(useCaseRunner.RunUseCase))
+	dispatcher.Register(TestRequest{}, interactor.MustAdapt(useCaseRunner.RunUseCase))
 
 	// act
 	var res TestResponse
-	if err := dispatcher.RunUseCase(context.Background(), TestRequest{}, &res); err != nil {
+	if err := dispatcher.Run(context.Background(), TestRequest{}, &res); err != nil {
 		log.Fatal(err)
 	}
 

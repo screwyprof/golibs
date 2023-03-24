@@ -5,36 +5,38 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/brianvoe/gofakeit/v4"
-	"github.com/stretchr/testify/assert"
+	"github.com/screwyprof/golibs/interactor"
+	. "github.com/screwyprof/golibs/interactor/testdsl"
 )
 
-func TestInteractor(t *testing.T) {
-	t.Run("Valid request provided, valid response returned", func(t *testing.T) {
-		// arrange
-		ID := gofakeit.Number(1, 100)
-		want := TestResponse{result: ID}
+func TestInteractorAcceptance(t *testing.T) {
+	t.Parallel()
 
-		sut := ConcreteUseCase{res: ID}
+	t.Run("ensure use case returns an error", func(t *testing.T) {
+		t.Parallel()
 
-		// act
-		var res TestResponse
-		err := sut.RunUseCase(context.Background(), TestRequest{id: ID}, &res)
+		want := errors.New("some error")
+		useCaseRunner := &ConcreteUseCase{err: want}
+		adaptedUseCaseRunner := interactor.MustAdapt(useCaseRunner.RunUseCase)
 
-		// assert
-		assert.NoError(t, err)
-		assert.Equal(t, want, res)
+		Test(t)(
+			Given(adaptedUseCaseRunner.Run),
+			When(context.Background(), TestRequest{}, &TestResponse{}),
+			ThenFailWith(want),
+		)
 	})
 
-	t.Run("Invalid request provided, an error returned", func(t *testing.T) {
-		// arrange
-		sut := ConcreteUseCase{err: errors.New("an error")}
+	t.Run("ensure use case returns valid result", func(t *testing.T) {
+		t.Parallel()
 
-		// act
-		var res TestResponse
-		err := sut.RunUseCase(context.Background(), TestRequest{}, &res)
+		want := &TestResponse{result: 123}
+		useCaseRunner := &ConcreteUseCase{res: want.result}
+		adaptedUseCaseRunner := interactor.MustAdapt(useCaseRunner.RunUseCase)
 
-		// assert
-		assert.Error(t, err)
+		Test(t)(
+			Given(adaptedUseCaseRunner.Run),
+			When(context.Background(), TestRequest{123}, &TestResponse{}),
+			Then(want),
+		)
 	})
 }

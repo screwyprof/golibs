@@ -28,7 +28,7 @@ func TestDispatcher(t *testing.T) {
 
 		// act
 		var res TestResponse
-		err := dispatcher.RunUseCase(context.Background(), TestRequest{}, &res)
+		err := dispatcher.Run(context.Background(), TestRequest{}, &res)
 
 		// assert
 		assertUseCaseRunnerNotFound(t, err)
@@ -41,11 +41,11 @@ func TestDispatcher(t *testing.T) {
 		useCaseRunner := &GeneralUseCaseSpy{}
 
 		dispatcher := interactor.NewDispatcher()
-		dispatcher.RegisterUseCaseRunner("TestRequest", useCaseRunner.RunUseCase)
+		dispatcher.Register(TestRequest{}, useCaseRunner.Run)
 
 		// act
 		var res TestResponse
-		err := dispatcher.RunUseCase(context.Background(), TestRequest{}, &res)
+		err := dispatcher.Run(context.Background(), TestRequest{}, &res)
 
 		// assert
 		assertUseCaseWasRunSuccessfully(t, err, useCaseRunner)
@@ -55,7 +55,7 @@ func TestDispatcher(t *testing.T) {
 func BenchmarkDispatcher(b *testing.B) {
 	dispatcher := interactor.NewDispatcher()
 	useCaseRunner := &GeneralUseCaseSpy{}
-	dispatcher.RegisterUseCaseRunner("TestRequest", useCaseRunner.RunUseCase)
+	dispatcher.Register(TestRequest{}, useCaseRunner.Run)
 
 	var res TestResponse
 
@@ -65,7 +65,7 @@ func BenchmarkDispatcher(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		_ = dispatcher.RunUseCase(ctx, req, &res)
+		_ = dispatcher.Run(ctx, req, &res)
 	}
 }
 
@@ -79,5 +79,5 @@ func assertUseCaseWasRunSuccessfully(t *testing.T, err error, useCaseRunner *Gen
 func assertUseCaseRunnerNotFound(t *testing.T, err error) {
 	t.Helper()
 
-	assert.True(t, errors.Is(err, interactor.ErrNotFound))
+	assert.True(t, errors.Is(err, interactor.ErrUseCaseRunnerNotFound))
 }

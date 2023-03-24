@@ -36,7 +36,7 @@ type GeneralUseCaseSpy struct {
 	wasCalled bool
 }
 
-func (s *GeneralUseCaseSpy) RunUseCase(ctx context.Context, req interactor.Request, res interface{}) error {
+func (s *GeneralUseCaseSpy) Run(ctx context.Context, req interactor.Request, res interactor.Response) error {
 	s.wasCalled = true
 
 	return nil

@@ -124,6 +124,10 @@ issues:
         - gosec
         - dupl
         - goerr113
+
+    - path: testdsl
+      linters:
+        - wrapcheck
 output:
   sort-results: true
 

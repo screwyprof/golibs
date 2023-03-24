@@ -12,41 +12,43 @@ var (
 	ErrInvalidUseCaseRunnerSignature = errors.New("useCaseRunner must have 3 input params")
 	ErrUseCaseRunnerIsNotAFunction   = errors.New("useCaseRunner is not a function")
 	ErrFirstArgHasInvalidType        = errors.New("first input argument must have context.Context type")
-	ErrSecondArgHasInvalidType       = errors.New("second input argument must be a struct")
-	ErrThirdArgHasInvalidType        = errors.New("third input argument must be a pointer to a struct")
+	ErrSecondArgHasInvalidType       = errors.New("second input argument must implement Request interface")
+	ErrThirdArgHasInvalidType        = errors.New("third input argument must implement Response interface")
 	ErrResultTypeMismatch            = errors.New("result type mismatch")
 )
 
-// Adapt transforms a concrete use case runner into a generic one.
-// A concrete runner function must:
+// Adapt is a helper function that converts a function with the appropriate signature into a UseCaseRunnerFn.
+//
+// The function must have the following signature:
 //  1. Have 3 arguments:
 //     * ctx context.Context,
-//     * req - a request struct,
-//     * res - a pointer to a response struct
+//     * req a struct which implements Request interface,
+//     * res a pointer to a struct which implements Response interface.
 //  2. Return an error
 //
-// An example signature may look like:
+// An example signature may look like as follows:
 //
 //	func(ctx context.Context, req TestRequest, res *TestResponse) error
-func Adapt(useCaseRunner interface{}) (UseCaseRunnerFn, error) {
-	useCaseRunnerType := reflect.TypeOf(useCaseRunner)
+func Adapt(fn interface{}) (UseCaseRunnerFn, error) {
+	useCaseRunnerType := reflect.TypeOf(fn)
 	if err := ensureSignatureIsValid(useCaseRunnerType); err != nil {
 		return nil, err
 	}
 
-	fn := func(ctx context.Context, req Request, res interface{}) error {
-		if err := ensureResultHasValidType(useCaseRunnerType, res); err != nil {
+	return func(ctx context.Context, req Request, resp Response) error {
+		if err := ensureResultHasValidType(useCaseRunnerType, resp); err != nil {
 			return err
 		}
 
-		return invokeUseCaseRunner(useCaseRunner, ctx, req, res)
-	}
-
-	return fn, nil
+		return invokeUseCaseRunner(fn, ctx, req, resp)
+	}, nil
 }
 
-func MustAdapt(useCaseRunner interface{}) UseCaseRunnerFn {
-	r, err := Adapt(useCaseRunner)
+// MustAdapt is a wrapper around Adapt which panics if an error occurs.
+//
+// It is useful for tests and for cases where you are sure that the signature is valid.
+func MustAdapt(fn interface{}) UseCaseRunnerFn {
+	r, err := Adapt(fn)
 	if err != nil {
 		panic(err)
 	}
@@ -67,8 +69,8 @@ func ensureSignatureIsValid(useCaseRunnerType reflect.Type) error {
 }
 
 func ensureResultHasValidType(runnerType reflect.Type, res interface{}) error {
-	want := runnerType.In(2).Elem()
-	got := reflect.TypeOf(res).Elem()
+	want := runnerType.In(2)
+	got := reflect.TypeOf(res)
 
 	if got != want {
 		return fmt.Errorf("%w: want %v, got %v", ErrResultTypeMismatch, want, got)
@@ -82,11 +84,11 @@ func ensureParamsHaveValidTypes(useCaseRunnerType reflect.Type) error {
 		return ErrFirstArgHasInvalidType
 	}
 
-	if !secondArgIsStructure(useCaseRunnerType) {
+	if !secondArgIsRequest(useCaseRunnerType) {
 		return ErrSecondArgHasInvalidType
 	}
 
-	if !thirdArgIsAPointerToAStruct(useCaseRunnerType) {
+	if !thirdArgIsResponse(useCaseRunnerType) {
 		return ErrThirdArgHasInvalidType
 	}
 
@@ -100,14 +102,18 @@ func firstArgIsContext(useCaseRunnerType reflect.Type) bool {
 	return ctx.Implements(ctxtInterface)
 }
 
-func secondArgIsStructure(useCaseRunnerType reflect.Type) bool {
-	return useCaseRunnerType.In(1).Kind() == reflect.Struct
+func secondArgIsRequest(useCaseRunnerType reflect.Type) bool {
+	requestInterface := reflect.TypeOf((*Request)(nil)).Elem()
+	secondArg := useCaseRunnerType.In(1)
+
+	return secondArg.Kind() == reflect.Struct && secondArg.Implements(requestInterface)
 }
 
-func thirdArgIsAPointerToAStruct(useCaseRunnerType reflect.Type) bool {
+func thirdArgIsResponse(useCaseRunnerType reflect.Type) bool {
+	responseInterface := reflect.TypeOf((*Response)(nil)).Elem()
 	thirdArg := useCaseRunnerType.In(2)
 
-	return thirdArg.Kind() == reflect.Ptr && thirdArg.Elem().Kind() == reflect.Struct
+	return thirdArg.Kind() == reflect.Ptr && thirdArg.Implements(responseInterface)
 }
 
 func invokeUseCaseRunner(useCaseRunner interface{}, args ...interface{}) error {

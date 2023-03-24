@@ -2,8 +2,6 @@ package interactor_test
 
 import (
 	"context"
-	"errors"
-	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -14,7 +12,7 @@ import (
 func TestAdapt(t *testing.T) {
 	t.Parallel()
 
-	t.Run("given use case runner must be a function", func(t *testing.T) {
+	t.Run("a use case runner must be a function", func(t *testing.T) {
 		t.Parallel()
 
 		// act
@@ -24,7 +22,7 @@ func TestAdapt(t *testing.T) {
 		assertUseCaseRunnerIsAFunction(t, err)
 	})
 
-	t.Run("given use case runner must have 3 arguments", func(t *testing.T) {
+	t.Run("a use case runner must have 3 arguments", func(t *testing.T) {
 		t.Parallel()
 
 		// arrange
@@ -54,11 +52,11 @@ func TestAdapt(t *testing.T) {
 		assertFirstArgHasContextType(t, err)
 	})
 
-	t.Run("second input param must be a structure", func(t *testing.T) {
+	t.Run("second input param must be a struct implementing Request", func(t *testing.T) {
 		t.Parallel()
 
 		// arrange
-		invalidRunner := func(ctx context.Context, req interface{}, resp *TestResponse) error {
+		invalidRunner := func(ctx context.Context, req int, resp *TestResponse) error {
 			return nil
 		}
 
@@ -66,14 +64,14 @@ func TestAdapt(t *testing.T) {
 		_, err := interactor.Adapt(invalidRunner)
 
 		// assert
-		assertSecondArgHasStructType(t, err)
+		assertSecondArgIsAreRequestType(t, err)
 	})
 
-	t.Run("third input param must be a pointer to a structure", func(t *testing.T) {
+	t.Run("third input param must be a pointer type implementing Response", func(t *testing.T) {
 		t.Parallel()
 
 		// arrange
-		invalidRunner := func(ctx context.Context, req TestRequest, resp TestResponse) error {
+		invalidRunner := func(ctx context.Context, req TestRequest, resp struct{}) error {
 			return nil
 		}
 
@@ -81,7 +79,7 @@ func TestAdapt(t *testing.T) {
 		_, err := interactor.Adapt(invalidRunner)
 
 		// assert
-		assertThirdArgHasPointerToAStructType(t, err)
+		assertThirdArgIsAResponseType(t, err)
 	})
 
 	t.Run("provided response type must match expected response type", func(t *testing.T) {
@@ -100,15 +98,14 @@ func TestAdapt(t *testing.T) {
 		assert.ErrorIs(t, err, interactor.ErrResultTypeMismatch)
 	})
 
-	t.Run("valid concrete use case runner given, valid generic use case runner returned", func(t *testing.T) {
+	t.Run("provided uses cases successfully adapted to comply with UseCaseRunner interface", func(t *testing.T) {
 		t.Parallel()
 
 		// act
-		got, err := interactor.Adapt(ConcreteUseCase{}.RunUseCase)
+		_, err := interactor.Adapt(ConcreteUseCase{}.RunUseCase)
 
 		// assert
 		assert.NoError(t, err)
-		assertReturnedUseCaseRunnerIsNotNil(t, got)
 	})
 
 	t.Run("ensure that the given valid concrete use case runner can return valid result", func(t *testing.T) {
@@ -170,30 +167,25 @@ func TestMustAdapt(t *testing.T) {
 
 func assertUseCaseRunnerHasInvalidSignature(t *testing.T, err error) {
 	t.Helper()
-	assert.True(t, errors.Is(err, interactor.ErrInvalidUseCaseRunnerSignature))
+	assert.ErrorIs(t, err, interactor.ErrInvalidUseCaseRunnerSignature)
 }
 
 func assertUseCaseRunnerIsAFunction(t *testing.T, err error) {
 	t.Helper()
-	assert.True(t, errors.Is(err, interactor.ErrUseCaseRunnerIsNotAFunction))
+	assert.ErrorIs(t, err, interactor.ErrUseCaseRunnerIsNotAFunction)
 }
 
 func assertFirstArgHasContextType(t *testing.T, err error) {
 	t.Helper()
-	assert.True(t, errors.Is(err, interactor.ErrFirstArgHasInvalidType))
+	assert.ErrorIs(t, err, interactor.ErrFirstArgHasInvalidType)
 }
 
-func assertSecondArgHasStructType(t *testing.T, err error) {
+func assertSecondArgIsAreRequestType(t *testing.T, err error) {
 	t.Helper()
-	assert.True(t, errors.Is(err, interactor.ErrSecondArgHasInvalidType))
+	assert.ErrorIs(t, err, interactor.ErrSecondArgHasInvalidType)
 }
 
-func assertThirdArgHasPointerToAStructType(t *testing.T, err error) {
+func assertThirdArgIsAResponseType(t *testing.T, err error) {
 	t.Helper()
-	assert.True(t, errors.Is(err, interactor.ErrThirdArgHasInvalidType))
-}
-
-func assertReturnedUseCaseRunnerIsNotNil(t *testing.T, got interactor.UseCaseRunnerFn) {
-	t.Helper()
-	assert.True(t, !reflect.ValueOf(got).IsNil())
+	assert.ErrorIs(t, err, interactor.ErrThirdArgHasInvalidType)
 }
